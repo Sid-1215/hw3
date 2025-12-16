@@ -30,7 +30,7 @@ Circuit::~Circuit()
 
 void Circuit::test()
 {
-    m_wires.push_back(new Wire(0, "input A"));
+  m_wires.push_back(new Wire(0, "input A"));
 	m_wires.push_back(new Wire(1, "input B"));
 	m_wires.push_back(new Wire(2, "output"));
     
@@ -109,7 +109,16 @@ bool Circuit::parse(const char* fname)
                     getline(ss, s_output, ',');
                     m_gates.push_back(new Or2Gate(m_wires[stoi(s_in1)], m_wires[stoi(s_in2)], m_wires[stoi(s_output)]));
                 }
-                //Add code here to support the NOT gate type
+                // add support for not gate now and decrease all the inputs to 1 instead of 2
+                if(s_type == "NOT")
+                {
+                    std::string s_in1;
+                    getline(ss, s_in1, ',');
+                    std::string s_output;
+                    getline(ss, s_output, ',');
+                    m_gates.push_back(new NotGate(m_wires[stoi(s_in1)], m_wires[stoi(s_output)]));
+                }
+                
             }
         }
         if(line == "INJECT")
@@ -148,24 +157,16 @@ bool Circuit::advance(std::ostream& os)
     ss << "@" << m_current_time << std::endl;
     bool updated = false;
     
-    while(m_pq.top()->time == m_current_time)
+    while(m_pq.size() > 0 && m_pq.top()->time == m_current_time)
     {
-        if(m_pq.size() >= 1)
+        std::string temp = m_pq.top()->wire->setState(m_pq.top()->state, m_current_time);
+        if(temp != "")
         {
-            std::string temp = m_pq.top()->wire->setState(m_pq.top()->state, m_current_time);
-            if(temp != "")
-            {
-                ss << temp << std::endl;
-                updated = true;
-            }
-            delete m_pq.top();
-            m_pq.pop();
-            if(m_pq.size() == 0) break;
+            ss << temp << std::endl;
+            updated = true;
         }
-        else
-        {
-            break;
-        }
+        delete m_pq.top();
+        m_pq.pop();
         
     }
     if(updated)
